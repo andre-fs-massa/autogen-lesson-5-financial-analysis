@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import datetime
 from pathlib import Path
@@ -43,7 +44,6 @@ load_dotenv()
 
 api_key = os.getenv("OPENAI_API_KEY")
 
-# Streamlit Cloud fallback
 if not api_key:
     try:
         api_key = st.secrets[
@@ -200,10 +200,6 @@ if run_button:
 
     try:
 
-        # ----------------------------------
-        # STEP 1
-        # ----------------------------------
-
         status_text.info(
             "⚙️ Initializing agents..."
         )
@@ -223,7 +219,7 @@ if run_button:
 
         # ==================================================
         # EXECUTOR FIX
-        # LOCAL VS STREAMLIT CLOUD
+        # USE SAME PYTHON AS STREAMLIT
         # ==================================================
 
         is_streamlit_cloud = (
@@ -243,12 +239,21 @@ if run_button:
                         get_stock_prices,
                         plot_stock_prices,
                     ],
+                    execution_policies={
+                        "python": {
+                            "command": [
+                                sys.executable
+                            ]
+                        }
+                    }
                 )
             )
 
         else:
 
-            venv_dir = Path(".venv")
+            venv_dir = Path(
+                ".venv"
+            )
 
             env_builder = (
                 EnvBuilder(
@@ -337,10 +342,6 @@ if run_button:
             )
         )
 
-        # ----------------------------------
-        # STEP 2
-        # ----------------------------------
-
         progress_bar.progress(35)
 
         status_text.info(
@@ -372,28 +373,17 @@ if run_button:
             f"'{output_file}'."
         )
 
-        # ----------------------------------
-        # STEP 3
-        # ----------------------------------
-
         progress_bar.progress(55)
 
         status_text.info(
             "📊 Executing financial analysis..."
         )
 
-        chat_result = (
-            code_executor_agent
-            .initiate_chat(
-                code_writer_agent,
-                message=message,
-                max_turns=8
-            )
+        code_executor_agent.initiate_chat(
+            code_writer_agent,
+            message=message,
+            max_turns=8
         )
-
-        # ----------------------------------
-        # STEP 4
-        # ----------------------------------
 
         progress_bar.progress(85)
 
@@ -411,10 +401,6 @@ if run_button:
         status_text.success(
             "✅ Analysis completed."
         )
-
-        # ==================================================
-        # CONVERSATION
-        # ==================================================
 
         st.subheader(
             "🤖 Agent Conversation"
@@ -447,10 +433,6 @@ if run_button:
                 expanded=False
             ):
                 st.write(content)
-
-        # ==================================================
-        # CHART
-        # ==================================================
 
         st.subheader(
             "📊 Generated Chart"
