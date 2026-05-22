@@ -43,9 +43,18 @@ load_dotenv()
 
 api_key = os.getenv("OPENAI_API_KEY")
 
+# Streamlit Cloud fallback
+if not api_key:
+    try:
+        api_key = st.secrets[
+            "OPENAI_API_KEY"
+        ]
+    except Exception:
+        pass
+
 if not api_key:
     st.error(
-        "OPENAI_API_KEY not found in .env"
+        "OPENAI_API_KEY not found."
     )
     st.stop()
 
@@ -212,34 +221,61 @@ if run_button:
             ]
         }
 
-        venv_dir = Path(".venv")
+        # ==================================================
+        # EXECUTOR FIX
+        # LOCAL VS STREAMLIT CLOUD
+        # ==================================================
 
-        env_builder = (
-            EnvBuilder(
-                with_pip=True
+        is_streamlit_cloud = (
+            os.environ.get(
+                "STREAMLIT_SERVER_PORT"
             )
+            is not None
         )
 
-        venv_context = (
-            env_builder
-            .ensure_directories(
-                str(venv_dir)
-            )
-        )
+        if is_streamlit_cloud:
 
-        executor = (
-            LocalCommandLineCodeExecutor(
-                timeout=60,
-                work_dir="coding",
-                functions=[
-                    get_stock_prices,
-                    plot_stock_prices,
-                ],
-                virtual_env_context=(
-                    venv_context
-                ),
+            executor = (
+                LocalCommandLineCodeExecutor(
+                    timeout=60,
+                    work_dir="coding",
+                    functions=[
+                        get_stock_prices,
+                        plot_stock_prices,
+                    ],
+                )
             )
-        )
+
+        else:
+
+            venv_dir = Path(".venv")
+
+            env_builder = (
+                EnvBuilder(
+                    with_pip=True
+                )
+            )
+
+            venv_context = (
+                env_builder
+                .ensure_directories(
+                    str(venv_dir)
+                )
+            )
+
+            executor = (
+                LocalCommandLineCodeExecutor(
+                    timeout=60,
+                    work_dir="coding",
+                    functions=[
+                        get_stock_prices,
+                        plot_stock_prices,
+                    ],
+                    virtual_env_context=(
+                        venv_context
+                    ),
+                )
+            )
 
         temp_agent = (
             AssistantAgent(
