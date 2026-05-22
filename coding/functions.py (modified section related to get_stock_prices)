@@ -1,0 +1,5 @@
+# filename: functions.py (modified section related to get_stock_prices)
+
+import time  # Add this line at the beginning of the functions.py file where other imports are defined
+
+# No changes are needed in the rest of the file content. Just ensure this import statement exists.
