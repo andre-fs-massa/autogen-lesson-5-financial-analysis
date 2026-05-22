@@ -97,7 +97,6 @@ with col2:
         index=1
     )
 
-
 run_button = st.button(
     "Run Analysis",
     type="primary"
@@ -184,6 +183,7 @@ def plot_stock_prices(
     )
 
     plt.xlabel("Date")
+
     plt.ylabel(
         "Price (USD)"
     )
@@ -346,11 +346,18 @@ if run_button:
                     "NEVER"
                 ),
                 default_auto_reply=(
-                    "Please continue. "
-                    "If everything "
-                    "is done, "
-                    "reply "
-                    "'TERMINATE'."
+                    "Continue solving "
+                    "the task. "
+                    "If package "
+                    "installation happens, "
+                    "rerun the failed "
+                    "Python script. "
+                    "Only reply "
+                    "'TERMINATE' when "
+                    "the chart file "
+                    "has actually "
+                    "been generated "
+                    "successfully."
                 ),
             )
         )
@@ -387,7 +394,10 @@ if run_button:
             f"code block and "
             f"save the figure "
             f"to a file "
-            f"'{output_file}'."
+            f"'{output_file}'. "
+            f"Verify the file "
+            f"exists before "
+            f"finishing."
         )
 
         # ----------------------------------
@@ -428,7 +438,7 @@ if run_button:
             .initiate_chat(
                 code_writer_agent,
                 message=message,
-                max_turns=8
+                max_turns=12
             )
         )
 
