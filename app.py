@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import datetime
+import subprocess
 from pathlib import Path
 from venv import EnvBuilder
 
@@ -42,8 +43,11 @@ st.caption(
 
 load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv(
+    "OPENAI_API_KEY"
+)
 
+# Streamlit Cloud fallback
 if not api_key:
     try:
         api_key = st.secrets[
@@ -117,6 +121,7 @@ def get_stock_prices(
     for attempt in range(max_retries):
 
         try:
+
             stock_data = yf.download(
                 stock_symbols,
                 start=start_date,
@@ -127,7 +132,9 @@ def get_stock_prices(
             )
 
             close_prices = (
-                stock_data.get("Close")
+                stock_data.get(
+                    "Close"
+                )
             )
 
             if (
@@ -146,7 +153,9 @@ def get_stock_prices(
                 attempt
                 < max_retries - 1
             ):
-                time.sleep(retry_wait)
+                time.sleep(
+                    retry_wait
+                )
 
     raise RuntimeError(
         "Failed to fetch stock prices."
@@ -159,7 +168,9 @@ def plot_stock_prices(
 ):
     import matplotlib.pyplot as plt
 
-    plt.figure(figsize=(10, 5))
+    plt.figure(
+        figsize=(10, 5)
+    )
 
     for column in stock_prices.columns:
         plt.plot(
@@ -173,11 +184,17 @@ def plot_stock_prices(
     )
 
     plt.xlabel("Date")
-    plt.ylabel("Price (USD)")
+    plt.ylabel(
+        "Price (USD)"
+    )
+
     plt.legend()
     plt.grid(True)
 
-    plt.savefig(filename)
+    plt.savefig(
+        filename
+    )
+
     plt.close()
 
 
@@ -200,6 +217,10 @@ if run_button:
 
     try:
 
+        # ----------------------------------
+        # STEP 1
+        # ----------------------------------
+
         status_text.info(
             "⚙️ Initializing agents..."
         )
@@ -218,8 +239,7 @@ if run_button:
         }
 
         # ==================================================
-        # EXECUTOR FIX
-        # USE SAME PYTHON AS STREAMLIT
+        # EXECUTOR
         # ==================================================
 
         is_streamlit_cloud = (
@@ -239,13 +259,6 @@ if run_button:
                         get_stock_prices,
                         plot_stock_prices,
                     ],
-                    execution_policies={
-                        "python": {
-                            "command": [
-                                sys.executable
-                            ]
-                        }
-                    }
                 )
             )
 
@@ -342,6 +355,10 @@ if run_button:
             )
         )
 
+        # ----------------------------------
+        # STEP 2
+        # ----------------------------------
+
         progress_bar.progress(35)
 
         status_text.info(
@@ -373,17 +390,51 @@ if run_button:
             f"'{output_file}'."
         )
 
+        # ----------------------------------
+        # STREAMLIT CLOUD FIX
+        # ----------------------------------
+
+        if is_streamlit_cloud:
+
+            status_text.info(
+                "📦 Preparing execution environment..."
+            )
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "yfinance==0.2.54",
+                    "matplotlib==3.10.0",
+                    "pandas"
+                ],
+                check=False
+            )
+
+        # ----------------------------------
+        # STEP 3
+        # ----------------------------------
+
         progress_bar.progress(55)
 
         status_text.info(
             "📊 Executing financial analysis..."
         )
 
-        code_executor_agent.initiate_chat(
-            code_writer_agent,
-            message=message,
-            max_turns=8
+        chat_result = (
+            code_executor_agent
+            .initiate_chat(
+                code_writer_agent,
+                message=message,
+                max_turns=8
+            )
         )
+
+        # ----------------------------------
+        # STEP 4
+        # ----------------------------------
 
         progress_bar.progress(85)
 
@@ -401,6 +452,10 @@ if run_button:
         status_text.success(
             "✅ Analysis completed."
         )
+
+        # ==================================================
+        # CONVERSATION
+        # ==================================================
 
         st.subheader(
             "🤖 Agent Conversation"
@@ -432,7 +487,13 @@ if run_button:
                 role,
                 expanded=False
             ):
-                st.write(content)
+                st.write(
+                    content
+                )
+
+        # ==================================================
+        # CHART
+        # ==================================================
 
         st.subheader(
             "📊 Generated Chart"
